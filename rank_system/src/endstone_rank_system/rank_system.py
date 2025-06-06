@@ -11,6 +11,7 @@ from endstone.event import (
     event_handler,
 )
 from endstone.form import ActionForm, MessageForm
+from endstone.inventory import ItemStack
 from endstone.plugin import Plugin
 from endstone.scoreboard import Criteria
 
@@ -20,6 +21,13 @@ class RankSystem(Plugin):
     name = "rank-system"
 
     NEWBIE_TAG = "\u00a77Newbie"
+    _how_ranks_text = (
+        "Earn ranks automatically:\n"
+        "Mob Kills: Hunter (0), Slayer (20), Beastmaster (100)\n"
+        "Player Kills: Fighter (0), Warrior (15), Champion (50)\n"
+        "Ores Mined: Miner (0), Excavator (100), Prospector (500)\n"
+        "Use /rank to choose which rank is displayed next to your name."
+    )
 
     commands = {
         "rank": {
@@ -57,18 +65,18 @@ class RankSystem(Plugin):
     RANKS = {
         "mob_kills": [
             (0, "\u00a7aHunter"),
-            (10, "\u00a79Slayer"),
-            (50, "\u00a7dBeastmaster"),
+            (20, "\u00a79Slayer"),
+            (100, "\u00a7dBeastmaster"),
         ],
         "player_kills": [
             (0, "\u00a7aFighter"),
-            (10, "\u00a79Warrior"),
-            (30, "\u00a7dChampion"),
+            (15, "\u00a79Warrior"),
+            (50, "\u00a7dChampion"),
         ],
         "ores_mined": [
             (0, "\u00a7aMiner"),
-            (50, "\u00a79Excavator"),
-            (150, "\u00a7dProspector"),
+            (100, "\u00a79Excavator"),
+            (500, "\u00a7dProspector"),
         ],
     }
 
@@ -167,7 +175,7 @@ class RankSystem(Plugin):
         ranks[stat] = rank_name
 
         if old_rank != rank_name:
-            self._apply_rank_benefits(player, rank_name)
+            self._apply_rank_benefits(player, rank_name, stat)
             self.server.broadcast_message(
                 f"{player.name} has been promoted to {rank_name}!"
             )
@@ -191,13 +199,65 @@ class RankSystem(Plugin):
 
         player.name_tag = f"[{rank_name}\u00a7r] \u00a7f{player.name}"
 
-    def _apply_rank_benefits(self, player, rank_name: str) -> None:
-        """Give effects or permissions for the rank."""
-        # Example benefit: give a short speed boost on promotion
+    def _apply_rank_benefits(self, player: Player, rank_name: str, stat: str) -> None:
+        """Give rewards for reaching a new rank."""
+        reward = ""
         try:
-            player.add_effect("minecraft:speed", 200, 0)
+            if stat == "mob_kills":
+                if rank_name.endswith("Hunter"):
+                    player.inventory.add_item(ItemStack("minecraft:bread", 32))
+                    reward = "32x minecraft:bread"
+                elif rank_name.endswith("Slayer"):
+                    player.inventory.add_item(ItemStack("minecraft:cooked_beef", 32))
+                    reward = "32x minecraft:cooked_beef"
+                elif rank_name.endswith("Beastmaster"):
+                    player.inventory.add_item(ItemStack("minecraft:golden_apple", 2))
+                    reward = "2x minecraft:golden_apple"
+            elif stat == "player_kills":
+                if rank_name.endswith("Fighter"):
+                    items = [
+                        "minecraft:leather_helmet",
+                        "minecraft:leather_chestplate",
+                        "minecraft:leather_leggings",
+                        "minecraft:leather_boots",
+                    ]
+                    reward = "a full set of Leather Armor"
+                elif rank_name.endswith("Warrior"):
+                    items = [
+                        "minecraft:iron_helmet",
+                        "minecraft:iron_chestplate",
+                        "minecraft:iron_leggings",
+                        "minecraft:iron_boots",
+                    ]
+                    reward = "a full set of Iron Armor"
+                elif rank_name.endswith("Champion"):
+                    items = [
+                        "minecraft:diamond_helmet",
+                        "minecraft:diamond_chestplate",
+                        "minecraft:diamond_leggings",
+                        "minecraft:diamond_boots",
+                    ]
+                    reward = "a full set of Diamond Armor"
+                else:
+                    items = []
+                for item in items:
+                    player.inventory.add_item(ItemStack(item))
+            elif stat == "ores_mined":
+                if rank_name.endswith("Miner"):
+                    player.add_effect("minecraft:haste", 1000000, 0)
+                    reward = "permanent Haste I"
+                elif rank_name.endswith("Excavator"):
+                    player.add_effect("minecraft:haste", 1000000, 1)
+                    reward = "permanent Haste II"
+                elif rank_name.endswith("Prospector"):
+                    player.add_effect("minecraft:night_vision", 1000000, 0)
+                    reward = "permanent Night Vision"
+            if reward:
+                player.send_message(
+                    f"\u00a7a[RankSystem] You earned the [{rank_name}] rank and received {reward}!"
+                )
         except Exception:
-            pass
+            self.logger.exception("Failed to apply rank reward")
 
     # Event handlers
     @event_handler
@@ -276,33 +336,39 @@ class RankSystem(Plugin):
         player = sender
 
         if command.name == "rank":
-            form = ActionForm("Select Rank")
-            form.add_button("Mob Kills")
-            form.add_button("Player Kills")
-            form.add_button("Ores Mined")
-            form.add_button("How Ranks Work")
+            main = ActionForm("Rank Menu")
+            main.add_button("Rank Display")
+            main.add_button("How Ranks Work")
 
-            def handle(p, index):
-                if index < 0 or index > 3:
-                    return
-                if index == 3:
+            def main_handle(p, index):
+                if index == 0:
+                    sub = ActionForm("Select Rank")
+                    sub.add_button("Mob Kills")
+                    sub.add_button("Player Kills")
+                    sub.add_button("Ores Mined")
+
+                    def sub_handle(p2, idx):
+                        if idx < 0 or idx > 2:
+                            return
+                        obj_name = ["mob_kills", "player_kills", "ores_mined"][idx]
+                        self._selected[self._uid(p2)] = obj_name
+                        self._set_display_rank(p2)
+
+                    sub.on_submit = sub_handle
+                    p.send_form(sub)
+                elif index == 1:
                     info = MessageForm(
                         "How Ranks Work",
-                        "Earn ranks by killing mobs, defeating other players, or mining ores."
-                        " Use /rank to choose which rank displays next to your name.",
+                        self._how_ranks_text,
                         "OK",
                         "",
                     )
                     p.send_form(info)
-                    return
 
-                obj_name = ["mob_kills", "player_kills", "ores_mined"][index]
-                self._selected[self._uid(p)] = obj_name
-                self._set_display_rank(p)
-
-            form.on_submit = handle
-            player.send_form(form)
+            main.on_submit = main_handle
+            player.send_form(main)
             return True
+
 
         if command.name == "rankup":
             if not player.has_permission("rank_system.command.rankup"):
