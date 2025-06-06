@@ -306,12 +306,25 @@ class RankSystem(Plugin):
             if not player.has_permission("rank_system.command.resetranks"):
                 player.send_message("You do not have permission to use this command.")
                 return True
+            sb = self.server.scoreboard
+
+            # Clear all saved data
             self._ranks.clear()
             self._selected.clear()
+
             if self._data_file is not None:
                 self._data_file.parent.mkdir(parents=True, exist_ok=True)
                 with self._data_file.open("w", encoding="utf-8") as f:
                     json.dump({"selected": {}, "ranks": {}}, f)
+
+            # Reset scoreboard entries for everyone
+            for entry in sb.entries:
+                sb.reset_scores(entry)
+
+            # Refresh online player name tags
+            for p in self.server.online_players:
+                self._set_display_rank(p)
+
             player.send_message("All ranks have been reset.")
             return True
 
