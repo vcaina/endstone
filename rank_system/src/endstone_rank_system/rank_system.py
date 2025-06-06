@@ -325,26 +325,26 @@ class RankSystem(Plugin):
                     player.inventory.add_item(ItemStack(item))
             elif stat == "ores_mined":
                 if rank_name.endswith("Miner"):
-                    player.perform_command(
-                        f"effect {player.name} minecraft:haste 1000000 0 true"
-                    )
+                    cmd = f"effect {player.name} minecraft:haste 1000000 0 true"
+                    self.logger.info(f"Applying effect command: {cmd}")
+                    self.server.dispatch_command(self.server.command_sender, cmd)
                     reward = "permanent Haste I"
                 elif rank_name.endswith("Excavator"):
-                    player.perform_command(
-                        f"effect {player.name} minecraft:haste 1000000 1 true"
-                    )
+                    cmd = f"effect {player.name} minecraft:haste 1000000 1 true"
+                    self.logger.info(f"Applying effect command: {cmd}")
+                    self.server.dispatch_command(self.server.command_sender, cmd)
                     reward = "permanent Haste II"
                 elif rank_name.endswith("Prospector"):
-                    player.perform_command(
-                        f"effect {player.name} minecraft:night_vision 1000000 0 true"
-                    )
+                    cmd = f"effect {player.name} minecraft:night_vision 1000000 0 true"
+                    self.logger.info(f"Applying effect command: {cmd}")
+                    self.server.dispatch_command(self.server.command_sender, cmd)
                     reward = "permanent Night Vision"
             if reward:
                 player.send_message(
                     f"\u00a7a[RankSystem] You earned the [{rank_name}] rank and received {reward}!"
                 )
-        except Exception as e:
-            self.logger.error(f"Failed to apply rank reward: {e}")
+        except Exception:
+            self.logger.exception("Failed to apply rank reward")
 
     # Event handlers
     @event_handler
