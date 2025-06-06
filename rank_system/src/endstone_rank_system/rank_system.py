@@ -23,17 +23,16 @@ class RankSystem(Plugin):
     NEWBIE_TAG = "\u00a77Newbie"
     _how_ranks_text = (
         "Earn ranks automatically and earn rewards:\n\n"
-        "Scroll down to learn mor\n\n"
         "Mob Kills:\n"
-        " - Hunter (5): 32 Bread\n"
+        " - Hunter (0): 32 Bread\n"
         " - Slayer (20): 32 Cooked Beef\n"
         " - Beastmaster (100): 2 Golden Apples\n\n"
         "Player Kills:\n"
-        " - Fighter (2): Leather Armor Set\n"
+        " - Fighter (0): Leather Armor Set\n"
         " - Warrior (15): Iron Armor Set\n"
         " - Champion (50): Diamond Armor Set\n\n"
         "Ores Mined:\n"
-        " - Miner (50): Haste I\n"
+        " - Miner (0): Haste I\n"
         " - Excavator (100): Haste II\n"
         " - Prospector (500): Night Vision\n\n"
         "Use /rank to choose which rank is displayed next to your name."
@@ -74,17 +73,17 @@ class RankSystem(Plugin):
 
     RANKS = {
         "mob_kills": [
-            (5, "\u00a7aHunter"),
+            (0, "\u00a7aHunter"),
             (20, "\u00a79Slayer"),
             (100, "\u00a7dBeastmaster"),
         ],
         "player_kills": [
-            (2, "\u00a7aFighter"),
+            (0, "\u00a7aFighter"),
             (15, "\u00a79Warrior"),
             (50, "\u00a7dChampion"),
         ],
         "ores_mined": [
-            (50, "\u00a7aMiner"),
+            (0, "\u00a7aMiner"),
             (100, "\u00a79Excavator"),
             (500, "\u00a7dProspector"),
         ],
@@ -100,6 +99,7 @@ class RankSystem(Plugin):
         "minecraft:redstone_ore",
         "minecraft:lapis_ore",
         "minecraft:nether_gold_ore",
+        "minecraft:quartz_ore",
         "minecraft:ancient_debris",
         "minecraft:deepslate_coal_ore",
         "minecraft:deepslate_iron_ore",
