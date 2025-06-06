@@ -336,8 +336,10 @@ class RankSystem(Plugin):
                 player.send_message(
                     f"\u00a7a[RankSystem] You earned the [{rank_name}] rank and received {reward}!"
                 )
-        except Exception:
-            self.logger.exception("Failed to apply rank reward")
+        except Exception as e:
+            self.logger.error(
+                "Failed to apply rank reward: %s", e
+            )
 
     # Event handlers
     @event_handler
