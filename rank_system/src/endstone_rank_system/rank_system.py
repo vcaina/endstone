@@ -219,6 +219,9 @@ class RankSystem(Plugin):
             return True
 
         if command.name == "rankup":
+            if not player.has_permission("rank_system.command.rankup"):
+                player.send_message("You do not have permission to use this command.")
+                return True
             self._update_player_rank(player)
             return True
 
