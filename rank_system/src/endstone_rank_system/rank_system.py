@@ -346,6 +346,25 @@ class RankSystem(Plugin):
         except Exception:
             self.logger.exception("Failed to apply rank reward")
 
+    def _reapply_effect_rewards(self, player: Player) -> None:
+        """Reapply permanent effects for players based on their ore rank."""
+        uid = self._uid(player)
+        rank_name = self._ranks.get(uid, {}).get("ores_mined")
+        if not rank_name:
+            return
+        try:
+            if rank_name.endswith("Miner"):
+                cmd = f"effect {player.name} haste 1000000 0 true"
+            elif rank_name.endswith("Excavator"):
+                cmd = f"effect {player.name} haste 1000000 1 true"
+            elif rank_name.endswith("Prospector"):
+                cmd = f"effect {player.name} night_vision 1000000 0 true"
+            else:
+                return
+            self.server.dispatch_command(self.server.command_sender, cmd)
+        except Exception:
+            self.logger.exception("Failed to reapply effect reward")
+
     # Event handlers
     @event_handler
     def on_actor_death(self, event: ActorDeathEvent) -> None:
@@ -369,7 +388,6 @@ class RankSystem(Plugin):
     def on_block_break(self, event: BlockBreakEvent) -> None:
         raw_type = event.block.type
         block_type = raw_type.lower().split("[")[0]
-        self.logger.info(f"Broke block: {raw_type} (normalized: {block_type})")
         if block_type in self.ORES:
             obj = self.server.scoreboard.get_objective("ores_mined")
             score = obj.get_score(event.player)
@@ -400,6 +418,9 @@ class RankSystem(Plugin):
                 obj = self.server.scoreboard.get_objective(stat)
                 if obj.get_score(player).value > 0:
                     self._update_stat(player, stat)
+
+        # Reapply permanent effects if the player already earned them
+        self._reapply_effect_rewards(player)
 
     @event_handler
     def on_player_chat(self, event: PlayerChatEvent) -> None:
