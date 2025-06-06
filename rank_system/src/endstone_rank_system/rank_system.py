@@ -16,6 +16,8 @@ class RankSystem(Plugin):
     api_version = "0.5"
     name = "rank-system"
 
+    NEWBIE_TAG = "Newbie"
+
     commands = {
         "rank": {
             "description": "Open the rank selection UI.",
@@ -92,9 +94,18 @@ class RankSystem(Plugin):
         stat = self._selected.get(player.unique_id)
         if not stat:
             return
-        obj = self.server.scoreboard.get_objective(stat)
-        score = obj.get_score(player)
-        rank_name = self._get_rank_name(stat, score.value)
+        sb = self.server.scoreboard
+        values = [
+            sb.get_objective("mob_kills").get_score(player).value,
+            sb.get_objective("player_kills").get_score(player).value,
+            sb.get_objective("ores_mined").get_score(player).value,
+        ]
+        if all(v == 0 for v in values):
+            rank_name = self.NEWBIE_TAG
+        else:
+            obj = sb.get_objective(stat)
+            score = obj.get_score(player)
+            rank_name = self._get_rank_name(stat, score.value)
         player.name_tag = f"[{rank_name}] {player.name}"
 
     # Event handlers
@@ -105,8 +116,7 @@ class RankSystem(Plugin):
             obj = self.server.scoreboard.get_objective("mob_kills")
             score = obj.get_score(killer)
             score.value = score.value + 1
-            if self._selected.get(killer.unique_id) == "mob_kills":
-                self._update_player_rank(killer)
+            self._update_player_rank(killer)
 
     @event_handler
     def on_player_death(self, event: PlayerDeathEvent) -> None:
@@ -115,8 +125,7 @@ class RankSystem(Plugin):
             obj = self.server.scoreboard.get_objective("player_kills")
             score = obj.get_score(killer)
             score.value = score.value + 1
-            if self._selected.get(killer.unique_id) == "player_kills":
-                self._update_player_rank(killer)
+            self._update_player_rank(killer)
 
     @event_handler
     def on_block_break(self, event: BlockBreakEvent) -> None:
@@ -124,8 +133,7 @@ class RankSystem(Plugin):
             obj = self.server.scoreboard.get_objective("ores_mined")
             score = obj.get_score(event.player)
             score.value = score.value + 1
-            if self._selected.get(event.player.unique_id) == "ores_mined":
-                self._update_player_rank(event.player)
+            self._update_player_rank(event.player)
 
     @event_handler
     def on_player_join(self, event: PlayerJoinEvent) -> None:
