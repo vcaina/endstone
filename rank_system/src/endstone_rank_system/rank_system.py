@@ -83,6 +83,14 @@ class RankSystem(Plugin):
         "minecraft:lapis_ore",
         "minecraft:nether_gold_ore",
         "minecraft:ancient_debris",
+        "minecraft:deepslate_coal_ore",
+        "minecraft:deepslate_iron_ore",
+        "minecraft:deepslate_copper_ore",
+        "minecraft:deepslate_gold_ore",
+        "minecraft:deepslate_diamond_ore",
+        "minecraft:deepslate_emerald_ore",
+        "minecraft:deepslate_redstone_ore",
+        "minecraft:deepslate_lapis_ore",
     }
 
     def __init__(self):
@@ -212,7 +220,9 @@ class RankSystem(Plugin):
 
     @event_handler
     def on_block_break(self, event: BlockBreakEvent) -> None:
-        if event.block.type in self.ORES:
+        block_type = event.block.type.lower().split("[")[0]
+        self.logger.info(f"Broke block: {event.block.type}")
+        if block_type in self.ORES:
             obj = self.server.scoreboard.get_objective("ores_mined")
             score = obj.get_score(event.player)
             score.value = score.value + 1
