@@ -100,6 +100,7 @@ class RankSystem(Plugin):
         "minecraft:lapis_ore",
         "minecraft:nether_gold_ore",
         "minecraft:quartz_ore",
+        "minecraft:nether_quartz_ore",
         "minecraft:ancient_debris",
         "minecraft:deepslate_coal_ore",
         "minecraft:deepslate_iron_ore",
@@ -191,7 +192,7 @@ class RankSystem(Plugin):
         if rank_name and old_rank != rank_name:
             self._apply_rank_benefits(player, rank_name, stat)
             self.server.broadcast_message(
-                f"{player.name} has been promoted to {rank_name}!"
+                f"\u00a7a[RankSystem]\u00a7r {player.name} has been promoted to {rank_name}!"
             )
             player.send_title("Rank Up!", f"You are now {rank_name}")
 
@@ -366,8 +367,9 @@ class RankSystem(Plugin):
 
     @event_handler
     def on_block_break(self, event: BlockBreakEvent) -> None:
-        block_type = event.block.type.lower().split("[")[0]
-        self.logger.info(f"Broke block: {event.block.type}")
+        raw_type = event.block.type
+        block_type = raw_type.lower().split("[")[0]
+        self.logger.info(f"Broke block: {raw_type} (normalized: {block_type})")
         if block_type in self.ORES:
             obj = self.server.scoreboard.get_objective("ores_mined")
             score = obj.get_score(event.player)
