@@ -231,7 +231,7 @@ class RankSystem(Plugin):
         prefix = self._ranks.get(uid, {}).get(selected, self.NEWBIE_TAG)
         if val == 0:
             prefix = self.NEWBIE_TAG
-        lines = [f"Displayed Rank: [{prefix}\u00a7r] {player.name}"]
+        lines = [f"\u00a7rDisplayed Rank: [{prefix}\u00a7r] {player.name}"]
 
         name_map = {
             "mob_kills": "Mob Kills",
@@ -255,11 +255,11 @@ class RankSystem(Plugin):
 
             if next_rank is None:
                 max_rank = tiers[-1][1]
-                line = f"{label}: {obj_val} (Max rank: {max_rank})"
+                line = f"\u00a7r{label}: {obj_val} (Max rank: {max_rank}\u00a7r)"
             else:
                 line = (
-                    f"{label}: {obj_val} / {next_threshold} "
-                    f"(next rank: {next_rank})"
+                    f"\u00a7r{label}: {obj_val} / {next_threshold} "
+                    f"(next rank: {next_rank}\u00a7r)"
                 )
             lines.append(line)
 
