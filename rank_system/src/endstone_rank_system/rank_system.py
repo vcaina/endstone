@@ -325,17 +325,17 @@ class RankSystem(Plugin):
                     player.inventory.add_item(ItemStack(item))
             elif stat == "ores_mined":
                 if rank_name.endswith("Miner"):
-                    cmd = f"effect {player.name} minecraft:haste 1000000 0 true"
+                    cmd = f"effect {player.name} haste 1000000 0 true"
                     self.logger.info(f"Applying effect command: {cmd}")
                     self.server.dispatch_command(self.server.command_sender, cmd)
                     reward = "permanent Haste I"
                 elif rank_name.endswith("Excavator"):
-                    cmd = f"effect {player.name} minecraft:haste 1000000 1 true"
+                    cmd = f"effect {player.name} haste 1000000 1 true"
                     self.logger.info(f"Applying effect command: {cmd}")
                     self.server.dispatch_command(self.server.command_sender, cmd)
                     reward = "permanent Haste II"
                 elif rank_name.endswith("Prospector"):
-                    cmd = f"effect {player.name} minecraft:night_vision 1000000 0 true"
+                    cmd = f"effect {player.name} night_vision 1000000 0 true"
                     self.logger.info(f"Applying effect command: {cmd}")
                     self.server.dispatch_command(self.server.command_sender, cmd)
                     reward = "permanent Night Vision"
