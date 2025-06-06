@@ -199,6 +199,29 @@ class RankSystem(Plugin):
 
         player.name_tag = f"[{rank_name}\u00a7r] \u00a7f{player.name}"
 
+    def _leaderboard_lines(self, stat: str) -> list[str]:
+        """Return formatted lines for the top 5 players of a stat."""
+        sb = self.server.scoreboard
+        obj = sb.get_objective(stat)
+        scores: list[tuple[Player, int]] = []
+        for entry in sb.entries:
+            if isinstance(entry, Player):
+                val = obj.get_score(entry).value
+                if val > 0:
+                    scores.append((entry, val))
+
+        scores.sort(key=lambda t: t[1], reverse=True)
+        lines = []
+        for i, (player, val) in enumerate(scores[:5], 1):
+            uid = self._uid(player)
+            selected = self._selected.get(uid, "mob_kills")
+            prefix = self._ranks.get(uid, {}).get(selected, self.NEWBIE_TAG)
+            lines.append(f"{i}. [{prefix}\u00a7r] {player.name} - {val}")
+
+        if not lines:
+            lines.append("No data yet.")
+        return lines
+
     def _apply_rank_benefits(self, player: Player, rank_name: str, stat: str) -> None:
         """Give rewards for reaching a new rank."""
         reward = ""
@@ -327,7 +350,8 @@ class RankSystem(Plugin):
         else:
             stat = self._selected.get(uid, "mob_kills")
             rank = self._ranks.get(uid, {}).get(stat, self.NEWBIE_TAG)
-        event.message = f"[{rank}\u00a7r] {event.message}"
+        original = event.message
+        event.message = f"[{rank}\u00a7r] \u00a7f{event.player.name}: {original}"
 
     def on_command(self, sender, command, args):
         if not isinstance(sender, Player):
@@ -338,6 +362,7 @@ class RankSystem(Plugin):
         if command.name == "rank":
             main = ActionForm("Rank Menu")
             main.add_button("Rank Display")
+            main.add_button("Leaderboards")
             main.add_button("How Ranks Work")
 
             def main_handle(p, index):
@@ -353,10 +378,40 @@ class RankSystem(Plugin):
                         obj_name = ["mob_kills", "player_kills", "ores_mined"][idx]
                         self._selected[self._uid(p2)] = obj_name
                         self._set_display_rank(p2)
+                        mapping = {
+                            "mob_kills": "Mob Kill rank",
+                            "player_kills": "Player Kill rank",
+                            "ores_mined": "Ore Mining rank",
+                        }
+                        p2.send_message(
+                            f"\u00a7a[RankSystem] {mapping[obj_name]} is now shown beside your name."
+                        )
 
                     sub.on_submit = sub_handle
                     p.send_form(sub)
                 elif index == 1:
+                    board = ActionForm("Leaderboards")
+                    board.add_button("Top Mob Killers")
+                    board.add_button("Top Player Killers")
+                    board.add_button("Top Ore Miners")
+
+                    def board_handle(p2, idx):
+                        if idx < 0 or idx > 2:
+                            return
+                        stat = ["mob_kills", "player_kills", "ores_mined"][idx]
+                        title = [
+                            "Top Mob Killers",
+                            "Top Player Killers",
+                            "Top Ore Miners",
+                        ][idx]
+                        lines = self._leaderboard_lines(stat)
+                        text = "\n".join(lines)
+                        form = MessageForm(title, text, "OK", "")
+                        p2.send_form(form)
+
+                    board.on_submit = board_handle
+                    p.send_form(board)
+                elif index == 2:
                     info = MessageForm(
                         "How Ranks Work",
                         self._how_ranks_text,
