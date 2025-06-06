@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from endstone.event import (
     ActorDeathEvent,
     BlockBreakEvent,
+    PlayerChatEvent,
     PlayerDeathEvent,
     PlayerJoinEvent,
     event_handler,
@@ -23,14 +27,23 @@ class RankSystem(Plugin):
             "description": "Open the rank selection UI.",
             "usages": ["/rank"],
             "permissions": ["rank_system.command.rank"],
-        }
+        },
+        "rankup": {
+            "description": "Promote to the next rank if eligible.",
+            "usages": ["/rankup"],
+            "permissions": ["rank_system.command.rankup"],
+        },
     }
 
     permissions = {
         "rank_system.command.rank": {
             "description": "Allow using /rank to choose rank display.",
             "default": True,
-        }
+        },
+        "rank_system.command.rankup": {
+            "description": "Allow using /rankup to manually upgrade rank.",
+            "default": True,
+        },
     }
 
     RANKS = {
@@ -67,9 +80,17 @@ class RankSystem(Plugin):
     def __init__(self):
         super().__init__()
         self._selected: dict[str, str] = {}
+        self._ranks: dict[str, str] = {}
+        self._data_file: Path | None = None
 
     def on_enable(self) -> None:
         sb = self.server.scoreboard
+        self._data_file = Path(self.data_folder) / "ranks.json"
+        if self._data_file.exists():
+            with self._data_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+                self._selected = data.get("selected", {})
+                self._ranks = data.get("ranks", {})
         for obj, display in [
             ("mob_kills", "Mob Kills"),
             ("player_kills", "Player Kills"),
@@ -79,6 +100,14 @@ class RankSystem(Plugin):
                 sb.add_objective(obj, Criteria.Type.DUMMY, display)
 
         self.register_events(self)
+
+    def on_disable(self) -> None:
+        if self._data_file is None:
+            return
+        data = {"selected": self._selected, "ranks": self._ranks}
+        self._data_file.parent.mkdir(parents=True, exist_ok=True)
+        with self._data_file.open("w", encoding="utf-8") as f:
+            json.dump(data, f)
 
     def _get_rank_name(self, obj_name: str, value: int) -> str:
         tiers = self.RANKS.get(obj_name, [])
@@ -106,7 +135,25 @@ class RankSystem(Plugin):
             obj = sb.get_objective(stat)
             score = obj.get_score(player)
             rank_name = self._get_rank_name(stat, score.value)
+
+        old_rank = self._ranks.get(player.unique_id)
+        self._ranks[player.unique_id] = rank_name
         player.name_tag = f"[{rank_name}] {player.name}"
+
+        if old_rank and old_rank != rank_name:
+            self._apply_rank_benefits(player, rank_name)
+            self.server.broadcast_message(
+                f"{player.name} has been promoted to {rank_name}!"
+            )
+            player.send_title("Rank Up!", f"You are now {rank_name}")
+
+    def _apply_rank_benefits(self, player, rank_name: str) -> None:
+        """Give effects or permissions for the rank."""
+        # Example benefit: give a short speed boost on promotion
+        try:
+            player.add_effect("minecraft:speed", 200, 0)
+        except Exception:
+            pass
 
     # Event handlers
     @event_handler
@@ -138,28 +185,41 @@ class RankSystem(Plugin):
     @event_handler
     def on_player_join(self, event: PlayerJoinEvent) -> None:
         # Display mob_kills by default
-        obj = self.server.scoreboard.get_objective("mob_kills")
         event.player.scoreboard = self.server.scoreboard
-        self._selected[event.player.unique_id] = "mob_kills"
+        if event.player.unique_id not in self._selected:
+            self._selected[event.player.unique_id] = "mob_kills"
         self._update_player_rank(event.player)
 
+    @event_handler
+    def on_player_chat(self, event: PlayerChatEvent) -> None:
+        rank = self._ranks.get(event.player.unique_id, self.NEWBIE_TAG)
+        event.message = f"[{rank}] {event.message}"
+
     def on_command(self, sender, command, args):
-        if command.name != "rank" or not sender.is_player:
+        if not sender.is_player:
             return False
 
         player = sender
-        sb = self.server.scoreboard
-        form = ActionForm("Select Rank")
-        form.add_button("Mob Kills")
-        form.add_button("Player Kills")
-        form.add_button("Ores Mined")
 
-        def handle(p, index):
-            obj_name = ["mob_kills", "player_kills", "ores_mined"][index]
-            self._selected[p.unique_id] = obj_name
-            p.scoreboard = sb
-            self._update_player_rank(p)
+        if command.name == "rank":
+            sb = self.server.scoreboard
+            form = ActionForm("Select Rank")
+            form.add_button("Mob Kills")
+            form.add_button("Player Kills")
+            form.add_button("Ores Mined")
 
-        form.on_submit = handle
-        form.show(player)
-        return True
+            def handle(p, index):
+                obj_name = ["mob_kills", "player_kills", "ores_mined"][index]
+                self._selected[p.unique_id] = obj_name
+                p.scoreboard = sb
+                self._update_player_rank(p)
+
+            form.on_submit = handle
+            form.show(player)
+            return True
+
+        if command.name == "rankup":
+            self._update_player_rank(player)
+            return True
+
+        return False
