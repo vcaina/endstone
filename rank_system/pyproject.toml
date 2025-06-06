@@ -1,0 +1,11 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "endstone-rank-system"
+version = "0.1.0"
+description = "A basic rank system plugin example"
+
+[project.entry-points."endstone.plugins"]
+rank_system = "endstone_rank_system:RankSystem"
