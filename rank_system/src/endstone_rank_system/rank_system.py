@@ -324,22 +324,26 @@ class RankSystem(Plugin):
                     player.inventory.add_item(ItemStack(item))
             elif stat == "ores_mined":
                 if rank_name.endswith("Miner"):
-                    player.add_effect("minecraft:haste", 1000000, 0)
+                    player.perform_command(
+                        f"effect {player.name} minecraft:haste 1000000 0 true"
+                    )
                     reward = "permanent Haste I"
                 elif rank_name.endswith("Excavator"):
-                    player.add_effect("minecraft:haste", 1000000, 1)
+                    player.perform_command(
+                        f"effect {player.name} minecraft:haste 1000000 1 true"
+                    )
                     reward = "permanent Haste II"
                 elif rank_name.endswith("Prospector"):
-                    player.add_effect("minecraft:night_vision", 1000000, 0)
+                    player.perform_command(
+                        f"effect {player.name} minecraft:night_vision 1000000 0 true"
+                    )
                     reward = "permanent Night Vision"
             if reward:
                 player.send_message(
                     f"\u00a7a[RankSystem] You earned the [{rank_name}] rank and received {reward}!"
                 )
         except Exception as e:
-            self.logger.error(
-                "Failed to apply rank reward: %s", e
-            )
+            self.logger.error(f"Failed to apply rank reward: {e}")
 
     # Event handlers
     @event_handler
