@@ -222,6 +222,49 @@ class RankSystem(Plugin):
             lines.append("No data yet.")
         return lines
 
+    def _profile_text(self, player: Player) -> str:
+        """Return profile info lines for the player."""
+        uid = self._uid(player)
+        selected = self._selected.get(uid, "mob_kills")
+        sb = self.server.scoreboard
+        val = sb.get_objective(selected).get_score(player).value
+        prefix = self._ranks.get(uid, {}).get(selected, self.NEWBIE_TAG)
+        if val == 0:
+            prefix = self.NEWBIE_TAG
+        lines = [f"Displayed Rank: [{prefix}\u00a7r] {player.name}"]
+
+        name_map = {
+            "mob_kills": "Mob Kills",
+            "player_kills": "Player Kills",
+            "ores_mined": "Ores Mined",
+        }
+        for stat in ["mob_kills", "player_kills", "ores_mined"]:
+            obj_val = sb.get_objective(stat).get_score(player).value
+            tiers = self.RANKS[stat]
+            next_rank = None
+            next_threshold = None
+            for threshold, name in tiers:
+                if obj_val < threshold:
+                    next_rank = name
+                    next_threshold = threshold
+                    break
+
+            label = name_map[stat]
+            if selected == stat:
+                label += " (displayed)"
+
+            if next_rank is None:
+                max_rank = tiers[-1][1]
+                line = f"{label}: {obj_val} (Max rank: {max_rank})"
+            else:
+                line = (
+                    f"{label}: {obj_val} / {next_threshold} "
+                    f"(next rank: {next_rank})"
+                )
+            lines.append(line)
+
+        return "\n".join(lines)
+
     def _apply_rank_benefits(self, player: Player, rank_name: str, stat: str) -> None:
         """Give rewards for reaching a new rank."""
         reward = ""
@@ -363,6 +406,7 @@ class RankSystem(Plugin):
             main = ActionForm("Rank Menu")
             main.add_button("Rank Display")
             main.add_button("Leaderboards")
+            main.add_button("Your Profile")
             main.add_button("How Ranks Work")
 
             def main_handle(p, index):
@@ -412,6 +456,14 @@ class RankSystem(Plugin):
                     board.on_submit = board_handle
                     p.send_form(board)
                 elif index == 2:
+                    profile = MessageForm(
+                        "Your Profile",
+                        self._profile_text(p),
+                        "OK",
+                        "",
+                    )
+                    p.send_form(profile)
+                elif index == 3:
                     info = MessageForm(
                         "How Ranks Work",
                         self._how_ranks_text,
