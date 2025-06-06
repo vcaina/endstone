@@ -22,10 +22,20 @@ class RankSystem(Plugin):
 
     NEWBIE_TAG = "\u00a77Newbie"
     _how_ranks_text = (
-        "Earn ranks automatically:\n"
-        "Mob Kills: Hunter (0), Slayer (20), Beastmaster (100)\n"
-        "Player Kills: Fighter (0), Warrior (15), Champion (50)\n"
-        "Ores Mined: Miner (0), Excavator (100), Prospector (500)\n"
+        "Earn ranks automatically and earn rewards:\n\n"
+        "Scroll down to learn mor\n\n"
+        "Mob Kills:\n"
+        " - Hunter (5): 32 Bread\n"
+        " - Slayer (20): 32 Cooked Beef\n"
+        " - Beastmaster (100): 2 Golden Apples\n\n"
+        "Player Kills:\n"
+        " - Fighter (2): Leather Armor Set\n"
+        " - Warrior (15): Iron Armor Set\n"
+        " - Champion (50): Diamond Armor Set\n\n"
+        "Ores Mined:\n"
+        " - Miner (50): Haste I\n"
+        " - Excavator (100): Haste II\n"
+        " - Prospector (500): Night Vision\n\n"
         "Use /rank to choose which rank is displayed next to your name."
     )
 
@@ -64,17 +74,17 @@ class RankSystem(Plugin):
 
     RANKS = {
         "mob_kills": [
-            (0, "\u00a7aHunter"),
+            (5, "\u00a7aHunter"),
             (20, "\u00a79Slayer"),
             (100, "\u00a7dBeastmaster"),
         ],
         "player_kills": [
-            (0, "\u00a7aFighter"),
+            (2, "\u00a7aFighter"),
             (15, "\u00a79Warrior"),
             (50, "\u00a7dChampion"),
         ],
         "ores_mined": [
-            (0, "\u00a7aMiner"),
+            (50, "\u00a7aMiner"),
             (100, "\u00a79Excavator"),
             (500, "\u00a7dProspector"),
         ],
@@ -154,7 +164,7 @@ class RankSystem(Plugin):
 
     def _get_rank_name(self, obj_name: str, value: int) -> str:
         tiers = self.RANKS.get(obj_name, [])
-        rank = tiers[0][1] if tiers else ""
+        rank = ""
         for threshold, name in tiers:
             if value >= threshold:
                 rank = name
@@ -172,9 +182,13 @@ class RankSystem(Plugin):
         uid = self._uid(player)
         ranks = self._ranks.setdefault(uid, {})
         old_rank = ranks.get(stat)
-        ranks[stat] = rank_name
 
-        if old_rank != rank_name:
+        if rank_name:
+            ranks[stat] = rank_name
+        else:
+            ranks.pop(stat, None)
+
+        if rank_name and old_rank != rank_name:
             self._apply_rank_benefits(player, rank_name, stat)
             self.server.broadcast_message(
                 f"{player.name} has been promoted to {rank_name}!"
