@@ -42,7 +42,7 @@ class RankSystem(Plugin):
         },
         "rank_system.command.rankup": {
             "description": "Allow using /rankup to manually upgrade rank.",
-            "default": True,
+            "default": "op",
         },
     }
 
