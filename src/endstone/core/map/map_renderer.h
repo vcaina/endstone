@@ -14,17 +14,17 @@
 
 #pragma once
 
-#define ENDSTONE_STRINGIFY(x) #x
-#define ENDSTONE_TOSTRING(x)  ENDSTONE_STRINGIFY(x)
+#include "bedrock/world/level/saveddata/map_item_saved_data.h"
+#include "endstone/core/map/map_view.h"
+#include "endstone/map/map_renderer.h"
 
-#define ENDSTONE_VERSION_MAJOR 0
-#define ENDSTONE_VERSION_MINOR 8
-#define ENDSTONE_VERSION_PATCH 2
+namespace endstone::core {
+class EndstoneMapRenderer : public MapRenderer {
+public:
+    EndstoneMapRenderer(EndstoneMapView &map_view, MapItemSavedData &map);
+    void render(MapView &map, MapCanvas &canvas, Player &player) override;
 
-#define ENDSTONE_API_VERSION ENDSTONE_TOSTRING(ENDSTONE_VERSION_MAJOR) "." ENDSTONE_TOSTRING(ENDSTONE_VERSION_MINOR)
-
-#ifndef ENDSTONE_VERSION
-#define ENDSTONE_VERSION                      \
-    ENDSTONE_TOSTRING(ENDSTONE_VERSION_MAJOR) \
-    "." ENDSTONE_TOSTRING(ENDSTONE_VERSION_MINOR) "." ENDSTONE_TOSTRING(ENDSTONE_VERSION_PATCH)
-#endif
+private:
+    MapItemSavedData &map_;
+};
+}  // namespace endstone::core
